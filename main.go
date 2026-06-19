@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -11,7 +12,7 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("shelter node is running"))
+		fmt.Fprintln(w, "shelter node is running :)")
 	})
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
