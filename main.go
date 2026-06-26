@@ -1,61 +1,32 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"net/http"
+	"log"
+	"os"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	"github.com/stageddat/shelter-node/internal/db"
+	"github.com/stageddat/shelter-node/internal/db/postgres"
+	"github.com/stageddat/shelter-node/internal/db/sqlite"
+	"github.com/stageddat/shelter-node/internal/server"
 )
 
 func main() {
-	r := chi.NewRouter()
-	r.Use(middleware.Logger)
+	var store db.Store
+	var err error
 
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "shelter node is running :)")
-	})
+	// database can be sqlite or postgres
+	switch os.Getenv("DB_DRIVER") {
+	case "postgres":
+		store, err = postgres.New(os.Getenv("DATABASE_URL"))
+	default:
+		store, err = sqlite.New(os.Getenv("DATABASE_PATH"))
+	}
 
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("ok"))
-	})
+	if err != nil {
+		log.Fatalf("db: %v", err)
+	}
+	defer store.Close()
 
-	r.Route("/v1", func(r chi.Router) {
-		r.Route("/user", func(r chi.Router) {
-			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusNotImplemented)
-				json.NewEncoder(w).Encode(struct {
-					Status string `json:"status"`
-				}{
-					Status: "not implemented",
-				})
-			})
-			r.Post("/", func(w http.ResponseWriter, r *http.Request) {
-				w.Write([]byte("ok"))
-			})
-		})
-
-		r.Route("/entries", func(r chi.Router) {
-			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-				w.Write([]byte("ok"))
-			})
-			r.Post("/", func(w http.ResponseWriter, r *http.Request) {
-				w.Write([]byte("ok"))
-			})
-			r.Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
-				w.Write([]byte("ok"))
-			})
-			r.Put("/{id}", func(w http.ResponseWriter, r *http.Request) {
-				w.Write([]byte("ok"))
-			})
-			r.Delete("/{id}", func(w http.ResponseWriter, r *http.Request) {
-				w.Write([]byte("ok"))
-			})
-		})
-	})
-
-	fmt.Println("server running on port 4123 :)")
-	http.ListenAndServe(":4123", r)
+	srv := server.New(store)
+	log.Fatal(srv.Start(":4123"))
 }
