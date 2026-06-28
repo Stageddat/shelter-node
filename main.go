@@ -18,6 +18,8 @@ func main() {
 	switch os.Getenv("DB_DRIVER") {
 	case "postgres":
 		store, err = postgres.New(os.Getenv("DATABASE_URL"))
+	case "sqlite":
+		store, err = sqlite.New(os.Getenv("DATABASE_PATH"))
 	default:
 		store, err = sqlite.New(os.Getenv("DATABASE_PATH"))
 	}
