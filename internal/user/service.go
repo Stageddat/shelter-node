@@ -3,6 +3,8 @@ package user
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
 )
 
 type Service struct {
@@ -14,6 +16,12 @@ func NewService(repo Repository) *Service {
 }
 
 func (s *Service) Create(ctx context.Context, req CreateUserRequest) (*User, error) {
+	// rechazar registros si esta en modo solo invitaciones
+	invitationOnly, _ := strconv.ParseBool(os.Getenv("INVITATION_ONLY"))
+	if invitationOnly {
+		return nil, fmt.Errorf("invitation only")
+	}
+
 	if req.Username == "" || req.AuthKeyHash == "" {
 		return nil, fmt.Errorf("username and auth_key_hash are required")
 	}
